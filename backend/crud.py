@@ -50,7 +50,7 @@ def get_or_create_transactions(db: Session, transactions_data: List[schemas.Tran
         existing_transaction = get_transaction_by_hash(db, transaction_data.raw_data_hash)
         if not existing_transaction:
             # Convert date string to datetime object
-            transaction_date = datetime.strptime(transaction_data.date, "%Y-%m-%d") # Modified line
+            transaction_date = datetime.fromisoformat(transaction_data.date) # Modified line
             db_transaction = models.Transaction(
                 user_id=transaction_data.user_id,
                 original_description=transaction_data.original_description,
