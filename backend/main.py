@@ -21,6 +21,10 @@ def get_db():
 def on_startup():
     database.Base.metadata.create_all(bind=database.engine)
 
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Transaction Categorization API"}
+
 @app.post("/api/transactions/upload", response_model=List[schemas.Transaction])
 async def upload_transactions(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not file.filename.endswith('.csv'):
