@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: transactions_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d transactions_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/transactions_db
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      REACT_APP_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - backend
+
+  data_engineering:
+    build:
+      context: ./data_engineering
+      dockerfile: Dockerfile
+    environment:
+      BACKEND_API_URL: http://backend:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./data_engineering:/app/data_engineering
+    # This service is meant to be run manually or as a scheduled job.
+    # It will exit after running the etl_pipeline.py once.
+    # To run it continuously or on demand, you might adjust its command or integrate with a scheduler.
+    command: ["python", "etl_pipeline.py"]
+
+volumes:
+  pg_data:
